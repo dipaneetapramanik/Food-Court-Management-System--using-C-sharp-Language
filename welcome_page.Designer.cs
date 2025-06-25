@@ -54,7 +54,7 @@
             this.ClientSize = new System.Drawing.Size(1184, 761);
             this.Controls.Add(this.get_started_button);
             this.Font = new System.Drawing.Font("Times New Roman", 8.25F);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "welcome_page";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "কুড়াতলী ভোজনশালা";

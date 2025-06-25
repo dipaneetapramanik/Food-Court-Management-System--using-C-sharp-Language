@@ -25,11 +25,11 @@ namespace Food_Court_Management_System
         private void button1_Click(object sender, EventArgs e)
         {
        
-            role_choice form2 = new role_choice();  // Create an instance of Form2
-            form2.Show();               // Show Form2
-            this.Hide();                // Optional: hide Form1
+            role_choice form2 = new role_choice();  
+            form2.Show();               
+            this.Hide();      
         
-
-    }
+            
+        }
 }
 }
