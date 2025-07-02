@@ -79,8 +79,10 @@
             this.textBox2.Location = new System.Drawing.Point(86, 416);
             this.textBox2.Multiline = true;
             this.textBox2.Name = "textBox2";
+            this.textBox2.PasswordChar = '*';
             this.textBox2.Size = new System.Drawing.Size(437, 37);
             this.textBox2.TabIndex = 4;
+            this.textBox2.TextChanged += new System.EventHandler(this.textBox2_TextChanged);
             // 
             // comboBox1
             // 
@@ -122,6 +124,7 @@
             this.checkBox1.TabIndex = 7;
             this.checkBox1.Text = "Show Password";
             this.checkBox1.UseVisualStyleBackColor = false;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
             // button1
             // 
@@ -165,7 +168,7 @@
             this.Name = "staff_login";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "কুড়াতলী ভোজনশালা";
-            this.Load += new System.EventHandler(this.staff_login_Load_1);
+            this.Load += new System.EventHandler(this.staff_login_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

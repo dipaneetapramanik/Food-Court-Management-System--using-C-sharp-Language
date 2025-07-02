@@ -15,7 +15,10 @@ namespace Food_Court_Management_System
     {
         private DataTable selectedItems;
         private int stallId;
-        
+        private int discountId = 0; // Store the fetched discount id here
+        private int discountPercent = 0;
+        private string discountName = "No Discount";
+
         private string conString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=XE)));User Id=food_court;Password=leader;";
 
         public payment(DataTable selectedItems, int stallId)
@@ -27,7 +30,14 @@ namespace Food_Court_Management_System
 
         private void payment_Load(object sender, EventArgs e)
         {
-     
+            if (!selectedItems.Columns.Contains("DISCOUNTED PRICE"))
+                selectedItems.Columns.Add("DISCOUNTED PRICE", typeof(decimal));
+
+            foreach (DataRow row in selectedItems.Rows)
+            {
+                row["DISCOUNTED PRICE"] = 0m;
+            }
+
             if (!selectedItems.Columns.Contains("UNIT PRICE"))
             {
                 selectedItems.Columns.Add("UNIT PRICE", typeof(decimal));
@@ -41,7 +51,7 @@ namespace Food_Court_Management_System
             {
                 selectedItems.Columns["price"].ColumnName = "TOTAL PRICE";
             }
-          
+
             foreach (DataRow row in selectedItems.Rows)
             {
                 decimal unitPrice = Convert.ToDecimal(row["UNIT PRICE"]);
@@ -56,10 +66,8 @@ namespace Food_Court_Management_System
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         }
 
-
         private void AddToPayRow()
         {
-   
             foreach (DataRow row in selectedItems.Rows.Cast<DataRow>().ToList())
             {
                 if (row[0].ToString() == "TO PAY")
@@ -92,7 +100,6 @@ namespace Food_Court_Management_System
             selectedItems.Rows.Add(totalRow);
         }
 
- 
         private void button1_Click(object sender, EventArgs e)
         {
             string inputDiscount = textBox1.Text.Trim().ToLower();
@@ -112,44 +119,70 @@ namespace Food_Court_Management_System
                 return;
             }
 
-            decimal totalToPay = Convert.ToDecimal(toPayRow["TOTAL PRICE"]);
-
-       
-            using (var con = new OracleConnection(conString))
+            try
             {
-                con.Open();
-                string query = "SELECT DISCOUNT_PERCENTAGES FROM discount WHERE LOWER(DISCOUNT_NAME) = :name";
-                using (var cmd = new OracleCommand(query, con))
+                using (var con = new OracleConnection(conString))
                 {
-                    cmd.Parameters.Add(new OracleParameter("name", inputDiscount));
-                    object result = cmd.ExecuteScalar();
-
-                    if (result != null && result != DBNull.Value)
+                    con.Open();
+                    // Fetch discount id, percent, and name
+                    string query = "SELECT DISCOUNT_ID, DISCOUNT_PERCENTAGES, DISCOUNT_NAME FROM discount WHERE LOWER(DISCOUNT_NAME) = :name";
+                    using (var cmd = new OracleCommand(query, con))
                     {
-                        int discountPercent = Convert.ToInt32(result);
-                        decimal discountAmount = totalToPay * discountPercent / 100m;
-                        decimal newTotal = totalToPay - discountAmount;
-
-                        toPayRow["TOTAL PRICE"] = newTotal;
-
-                        dataGridView1.DataSource = null;
-                        dataGridView1.DataSource = selectedItems;
-
-                        MessageBox.Show($"Discount applied");
-
-                        button1.Enabled = false;
-                        discount.Show();
-                        label3.Show();
-                        label3.Text = $"{newTotal} Taka";
-
-                    }
-                    else
-                    {
-                        MessageBox.Show("Invalid discount name.");
+                        cmd.Parameters.Add(new OracleParameter("name", inputDiscount));
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                discountId = Convert.ToInt32(reader["DISCOUNT_ID"]);
+                                discountPercent = Convert.ToInt32(reader["DISCOUNT_PERCENTAGES"]);
+                                discountName = reader["DISCOUNT_NAME"].ToString();
+                            }
+                            else
+                            {
+                                MessageBox.Show("Invalid discount name.");
+                                return;
+                            }
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Database error: {ex.Message}");
+                return;
+            }
+
+            // Apply discount to each item (excluding "TO PAY" row)
+            foreach (DataRow row in selectedItems.Rows)
+            {
+                if (row[0].ToString() == "TO PAY") continue;
+                decimal originalPrice = Convert.ToDecimal(row["TOTAL PRICE"]);
+                decimal discountedPrice = originalPrice - (originalPrice * discountPercent / 100m);
+                row["DISCOUNTED PRICE"] = discountedPrice;
+            }
+
+            // Update "TO PAY" row to reflect sum of discounted prices
+            if (toPayRow != null)
+            {
+                decimal newTotal = selectedItems.Rows
+                    .Cast<DataRow>()
+                    .Where(r => r[0].ToString() != "TO PAY")
+                    .Sum(r => r.Field<decimal>("DISCOUNTED PRICE"));
+                toPayRow["TOTAL PRICE"] = newTotal;
+            }
+
+            dataGridView1.DataSource = null;
+            dataGridView1.DataSource = selectedItems;
+
+            MessageBox.Show("Discount applied to each item.");
+
+            button2.Enabled = false;
+            // discount.Show(); // If this was a label, show it, otherwise ignore
+            label3.Show();
+            discount.Show();
+            label3.Text = $"{toPayRow["TOTAL PRICE"]} Taka";
         }
+
         private decimal GetToPayAmount()
         {
             DataRow toPayRow = selectedItems.Rows
@@ -162,6 +195,28 @@ namespace Food_Court_Management_System
                 return 0;
         }
 
+        // PASS discountId, discountPercent, discountName TO NEXT FORMS
+        private void button3_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Are you sure to proceed?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+            {
+                return;
+            }
+
+            decimal toPay = GetToPayAmount();
+            option optionForm = new option(selectedItems, stallId, toPay, discountId, discountPercent, discountName); // pass all discount info
+            optionForm.Show();
+        }
+
+        // Similar button to open bkash, pass discount info
+        private void buttonBkash_Click(object sender, EventArgs e)
+        {
+            decimal toPay = GetToPayAmount();
+            bkash bkashForm = new bkash(selectedItems, stallId, toPay, discountId, discountPercent, discountName); // pass all discount info
+            bkashForm.Show();
+        }
+
         private void button2_Click_1(object sender, EventArgs e)
         {
             confirmation confirmationForm = new confirmation(selectedItems, stallId, this);
@@ -169,33 +224,28 @@ namespace Food_Court_Management_System
             this.Hide();
         }
 
-
         private void discount_Click(object sender, EventArgs e)
         {
         }
 
-       
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
         }
 
-   
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
         }
 
-
         private void button2_Click(object sender, EventArgs e)
         {
         }
-        private void button3_Click(object sender, EventArgs e)
-        {
-            decimal toPay = GetToPayAmount();
-            option optionForm = new option(selectedItems, stallId, toPay);
-            optionForm.Show();
-        }
 
         private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
         {
 
         }

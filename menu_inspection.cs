@@ -14,7 +14,9 @@ namespace Food_Court_Management_System
         {
             InitializeComponent();
             this.stallId = stallId;
+            // Ensure event is wired
             this.Load += menu_inspection_Load;
+            dataGridView1.CellClick += dataGridView1_CellClick;
         }
 
         private void menu_inspection_Load(object sender, EventArgs e)
@@ -45,23 +47,25 @@ namespace Food_Court_Management_System
             }
         }
 
-        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        // Use CellClick for more reliable cell selection
+        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
-                txtMenuId.Text = row.Cells["MENU_ID"].Value.ToString();
-                txtItemName.Text = row.Cells["ITEM_NAME"].Value.ToString();
-                txtCategory.Text = row.Cells["CATEGORY"].Value.ToString();
-                txtPrice.Text = row.Cells["PRICE"].Value.ToString();
-                txtDescription.Text = row.Cells["DESCRIPTION"].Value.ToString();
+                txtMenuId.Text = row.Cells["MENU_ID"].Value?.ToString() ?? "";
+                txtItemName.Text = row.Cells["ITEM_NAME"].Value?.ToString() ?? "";
+                txtCategory.Text = row.Cells["CATEGORY"].Value?.ToString() ?? "";
+                txtPrice.Text = row.Cells["PRICE"].Value?.ToString() ?? "";
+                txtDescription.Text = row.Cells["DESCRIPTION"].Value?.ToString() ?? "";
             }
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-
+            // If this is not used, you may remove it.
         }
+
         private void ClearFields()
         {
             txtMenuId.Clear();
@@ -71,34 +75,43 @@ namespace Food_Court_Management_System
             txtDescription.Clear();
         }
 
-        private void menu_inspection_Load_1(object sender, EventArgs e)
-        {
-
-        }
-
         private void btnAdd_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(txtItemName.Text) ||
+                string.IsNullOrWhiteSpace(txtCategory.Text) ||
+                string.IsNullOrWhiteSpace(txtPrice.Text))
+            {
+                MessageBox.Show("Please fill in Item Name, Category, and Price.");
+                return;
+            }
+
+            if (!decimal.TryParse(txtPrice.Text.Trim(), out decimal price))
+            {
+                MessageBox.Show("Invalid price. Please enter a valid number.");
+                return;
+            }
+
             try
             {
                 using (OracleConnection con = new OracleConnection(conString))
                 {
                     con.Open();
                     string query = @"INSERT INTO menu_item 
-                (MENU_ID, ITEM_NAME, CATEGORY, PRICE, DESCRIPTION, STALL_ID) 
-                VALUES (menu_item_seq.NEXTVAL, :itemName, :category, :price, :description, :stallId)";
+                        (MENU_ID, ITEM_NAME, CATEGORY, PRICE, DESCRIPTION, STALL_ID) 
+                        VALUES (menu_item_seq.NEXTVAL, :itemName, :category, :price, :description, :stallId)";
                     using (OracleCommand cmd = new OracleCommand(query, con))
                     {
                         cmd.Parameters.Add("itemName", txtItemName.Text.Trim());
                         cmd.Parameters.Add("category", txtCategory.Text.Trim());
-                        cmd.Parameters.Add("price", txtPrice.Text.Trim());
+                        cmd.Parameters.Add("price", price);
                         cmd.Parameters.Add("description", txtDescription.Text.Trim());
-                        cmd.Parameters.Add("stallId", stallId); // <-- automatically use the form's stallId!
+                        cmd.Parameters.Add("stallId", stallId);
 
                         int rows = cmd.ExecuteNonQuery();
                         if (rows > 0)
                         {
                             MessageBox.Show("Menu item added successfully!");
-                            LoadMenuData(); // Refresh DataGridView
+                            LoadMenuData();
                             ClearFields();
                         }
                         else
@@ -141,7 +154,7 @@ namespace Food_Court_Management_System
                     {
                         if (row.Cells["MENU_ID"].Value != null)
                         {
-                            string menuId = row.Cells["MENU_ID"].Value.ToString();
+                            int menuId = Convert.ToInt32(row.Cells["MENU_ID"].Value);
                             string query = "DELETE FROM menu_item WHERE MENU_ID = :menuId";
                             using (OracleCommand cmd = new OracleCommand(query, con))
                             {
@@ -153,7 +166,8 @@ namespace Food_Court_Management_System
                 }
 
                 MessageBox.Show("Selected rows deleted.");
-                LoadMenuData(); // Refresh grid
+                LoadMenuData();
+                ClearFields();
             }
             catch (Exception ex)
             {
@@ -161,16 +175,23 @@ namespace Food_Court_Management_System
             }
         }
 
-        private void dataGridView1_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
         private void button4_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(txtMenuId.Text))
+            if (string.IsNullOrWhiteSpace(txtMenuId.Text))
             {
                 MessageBox.Show("Please select a menu item to update.");
+                return;
+            }
+
+            if (!int.TryParse(txtMenuId.Text.Trim(), out int menuId))
+            {
+                MessageBox.Show("Invalid Menu ID.");
+                return;
+            }
+
+            if (!decimal.TryParse(txtPrice.Text.Trim(), out decimal price))
+            {
+                MessageBox.Show("Invalid price. Please enter a valid number.");
                 return;
             }
 
@@ -180,18 +201,19 @@ namespace Food_Court_Management_System
                 {
                     con.Open();
                     string query = @"UPDATE menu_item 
-                             SET ITEM_NAME = :itemName,
-                                 CATEGORY = :category,
-                                 PRICE = :price,
-                                 DESCRIPTION = :description
-                             WHERE MENU_ID = :menuId";
+                                 SET ITEM_NAME = :itemName,
+                                     CATEGORY = :category,
+                                     PRICE = :price,
+                                     DESCRIPTION = :description
+                                 WHERE MENU_ID = :menuId";
                     using (OracleCommand cmd = new OracleCommand(query, con))
                     {
+                        // Order of Add matters for Oracle!
                         cmd.Parameters.Add("itemName", txtItemName.Text.Trim());
                         cmd.Parameters.Add("category", txtCategory.Text.Trim());
-                        cmd.Parameters.Add("price", txtPrice.Text.Trim());
+                        cmd.Parameters.Add("price", price);
                         cmd.Parameters.Add("description", txtDescription.Text.Trim());
-                        cmd.Parameters.Add("menuId", txtMenuId.Text.Trim()); // <-- Add this line!
+                        cmd.Parameters.Add("menuId", menuId);
 
                         int rows = cmd.ExecuteNonQuery();
                         if (rows > 0)
@@ -215,13 +237,11 @@ namespace Food_Court_Management_System
 
         private void button5_Click(object sender, EventArgs e)
         {
-
             try
             {
                 using (OracleConnection con = new OracleConnection(conString))
                 {
                     con.Open();
-                    // Build the query with flexible filtering
                     string query = @"SELECT * FROM menu_item WHERE STALL_ID = :stallId";
 
                     if (!string.IsNullOrWhiteSpace(txtMenuId.Text))
@@ -267,10 +287,9 @@ namespace Food_Court_Management_System
 
         private void button1_Click(object sender, EventArgs e)
         {
-            owner own= new owner(stallId);
+            owner own = new owner(stallId);
             own.Show();
             this.Hide();
-
         }
     }
 }

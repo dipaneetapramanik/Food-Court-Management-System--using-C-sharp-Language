@@ -41,7 +41,7 @@
             this.button1.ForeColor = System.Drawing.Color.White;
             this.button1.Location = new System.Drawing.Point(-1, 326);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(173, 40);
+            this.button1.Size = new System.Drawing.Size(180, 40);
             this.button1.TabIndex = 0;
             this.button1.Text = "CLOSE";
             this.button1.UseVisualStyleBackColor = true;
@@ -51,7 +51,7 @@
             // 
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button2.ForeColor = System.Drawing.Color.MediumPurple;
-            this.button2.Location = new System.Drawing.Point(168, 326);
+            this.button2.Location = new System.Drawing.Point(178, 326);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(173, 40);
             this.button2.TabIndex = 1;
@@ -76,7 +76,7 @@
             this.label2.AutoSize = true;
             this.label2.BackColor = System.Drawing.Color.Transparent;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(204, 124);
+            this.label2.Location = new System.Drawing.Point(180, 124);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(70, 25);
             this.label2.TabIndex = 4;
@@ -88,13 +88,13 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
-            this.ClientSize = new System.Drawing.Size(333, 361);
+            this.ClientSize = new System.Drawing.Size(351, 461);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.textBoxBkashNumber);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Name = "bkash";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "কুড়াতলী ভোজনশালা";
             this.Load += new System.EventHandler(this.bkash_Load);
             this.ResumeLayout(false);

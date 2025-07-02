@@ -1,37 +1,33 @@
 ﻿using Oracle.ManagedDataAccess.Client;
 using System;
-using System.Reflection.Emit;
 using System.Windows.Forms;
 
 namespace Food_Court_Management_System
 {
     public partial class employee : Form
     {
-        private int stallId;
+        private int employeeId;
 
-        public employee(int stallId)
+        public employee(int employeeId)
         {
             InitializeComponent();
-            this.stallId = stallId;
+            this.employeeId = employeeId;
         }
 
         private void employee_Load(object sender, EventArgs e)
         {
-
-            // Fetch employee info from database
             string conString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=XE)));User Id=food_court;Password=leader;";
             using (OracleConnection con = new OracleConnection(conString))
             {
                 con.Open();
-                string query = "SELECT EMPLOYEE_NAME, EMPLOYEE_ROLE, EMPLOYEE_ADDRESS, EMPLOYEE_SALARY, E_MOBILE_NUMBER, STALL_ID FROM employee WHERE STALL_ID = :stallId";
+                string query = "SELECT EMPLOYEE_NAME, EMPLOYEE_ROLE, EMPLOYEE_ADDRESS, EMPLOYEE_SALARY, E_MOBILE_NUMBER, STALL_ID FROM employee WHERE EMPLOYEE_ID = :empId";
                 using (OracleCommand cmd = new OracleCommand(query, con))
                 {
-                    cmd.Parameters.Add(new OracleParameter("stallId", stallId));
+                    cmd.Parameters.Add(new OracleParameter("empId", employeeId));
                     using (OracleDataReader reader = cmd.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            // Display values in value labels (e.g. label7-label12)
                             label1.Text = reader["EMPLOYEE_NAME"].ToString();
                             label2.Text = reader["EMPLOYEE_ROLE"].ToString();
                             label3.Text = reader["EMPLOYEE_ADDRESS"].ToString();
@@ -41,7 +37,7 @@ namespace Food_Court_Management_System
                         }
                         else
                         {
-                            MessageBox.Show("No employee found for this stall ID.");
+                            MessageBox.Show("No employee found for this ID.");
                         }
                     }
                 }
@@ -65,13 +61,11 @@ namespace Food_Court_Management_System
             }
         }
 
-
         private void label1_Click(object sender, EventArgs e) { }
         private void label2_Click(object sender, EventArgs e) { }
         private void label3_Click(object sender, EventArgs e) { }
         private void label4_Click(object sender, EventArgs e) { }
         private void label5_Click(object sender, EventArgs e) { }
         private void label6_Click(object sender, EventArgs e) { }
-
     }
 }

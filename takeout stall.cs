@@ -23,7 +23,7 @@ namespace Food_Court_Management_System
 
         private void takeout_stall_Load(object sender, EventArgs e)
         {
-            currentStallId = 20;
+            currentStallId = 90;
             LoadMenuByStallId(currentStallId);
         }
         private void LoadMenuByStallId(int stallId)
@@ -76,6 +76,14 @@ namespace Food_Court_Management_System
             confirmation confirmationForm = new confirmation(selectedTable, currentStallId, this);
             confirmationForm.Show();
        
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            stall_selection stall = new stall_selection();  
+            stall.Show();
+            this.Hide(); // Hide the current form
+
         }
     }
 }

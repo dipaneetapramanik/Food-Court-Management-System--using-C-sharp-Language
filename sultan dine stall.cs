@@ -13,7 +13,7 @@ namespace Food_Court_Management_System
     public partial class sultan_dine_stall : Form
     {
         string conString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=XE)));User Id=food_court;Password=leader;";
-        private int currentStallId = 10; 
+        private int currentStallId = 100; 
         public sultan_dine_stall()
         {
             InitializeComponent();

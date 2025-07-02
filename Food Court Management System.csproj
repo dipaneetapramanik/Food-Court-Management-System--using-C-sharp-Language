@@ -117,6 +117,36 @@
     <Compile Include="admin.Designer.cs">
       <DependentUpon>admin.cs</DependentUpon>
     </Compile>
+    <Compile Include="admin_employee.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="admin_employee.Designer.cs">
+      <DependentUpon>admin_employee.cs</DependentUpon>
+    </Compile>
+    <Compile Include="admin_menu.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="admin_menu.Designer.cs">
+      <DependentUpon>admin_menu.cs</DependentUpon>
+    </Compile>
+    <Compile Include="admin_orders.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="admin_orders.Designer.cs">
+      <DependentUpon>admin_orders.cs</DependentUpon>
+    </Compile>
+    <Compile Include="admin_owner.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="admin_owner.Designer.cs">
+      <DependentUpon>admin_owner.cs</DependentUpon>
+    </Compile>
+    <Compile Include="admin_staffs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="admin_staffs.Designer.cs">
+      <DependentUpon>admin_staffs.cs</DependentUpon>
+    </Compile>
     <Compile Include="bfc_stall.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -158,6 +188,12 @@
     </Compile>
     <Compile Include="employee_inspection.Designer.cs">
       <DependentUpon>employee_inspection.cs</DependentUpon>
+    </Compile>
+    <Compile Include="food_stall.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="food_stall.Designer.cs">
+      <DependentUpon>food_stall.cs</DependentUpon>
     </Compile>
     <Compile Include="menu_inspection.cs">
       <SubType>Form</SubType>
@@ -254,6 +290,12 @@
     <EmbeddedResource Include="admin.resx">
       <DependentUpon>admin.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="admin_owner.resx">
+      <DependentUpon>admin_owner.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="admin_staffs.resx">
+      <DependentUpon>admin_staffs.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="bfc_stall.resx">
       <DependentUpon>bfc_stall.cs</DependentUpon>
     </EmbeddedResource>
@@ -274,6 +316,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="employee_inspection.resx">
       <DependentUpon>employee_inspection.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="food_stall.resx">
+      <DependentUpon>food_stall.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="menu_inspection.resx">
       <DependentUpon>menu_inspection.cs</DependentUpon>

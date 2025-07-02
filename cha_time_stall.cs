@@ -14,7 +14,7 @@ namespace Food_Court_Management_System
     public partial class cha_time_stall : Form
     {
         string conString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=XE)));User Id=food_court;Password=leader;";
-        private int currentStallId = 40;
+        private int currentStallId = 110;
         public cha_time_stall()
         {
             InitializeComponent();

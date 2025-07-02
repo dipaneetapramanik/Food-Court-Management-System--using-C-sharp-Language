@@ -64,7 +64,9 @@ namespace Food_Court_Management_System
 
         private void button2_Click(object sender, EventArgs e)
         {
-            
+            employee_inspection emp= new employee_inspection(stallId);
+            emp.Show();
+
         }
 
         private void button1_Click(object sender, EventArgs e)

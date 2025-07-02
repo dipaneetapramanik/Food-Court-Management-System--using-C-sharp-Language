@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Oracle.ManagedDataAccess.Client;
 
@@ -16,17 +11,21 @@ namespace Food_Court_Management_System
         private DataTable selectedItems;
         private int stallId;
         private decimal toPay;
-        private string paymentMethod = "Cash"; // Default, can be set as needed
-
-        // Oracle connection string
+        private int discountId;
+        private int discountPercent;
+        private string discountName;
+        private string paymentMethod = "Cash"; // Default
         private string connStr = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=XE)));User Id=food_court;Password=leader;";
 
-        public option(DataTable selectedItems, int stallId, decimal toPay)
+        public option(DataTable selectedItems, int stallId, decimal toPay, int discountId, int discountPercent, string discountName)
         {
             InitializeComponent();
             this.selectedItems = selectedItems;
             this.stallId = stallId;
             this.toPay = toPay;
+            this.discountId = discountId;
+            this.discountPercent = discountPercent;
+            this.discountName = discountName;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -34,16 +33,6 @@ namespace Food_Court_Management_System
             var result = MessageBox.Show("Payment Successful. Redirecting to Service.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             if (result == DialogResult.OK)
             {
-                decimal toPay = 0;
-                if (selectedItems.Rows.Count > 0)
-                {
-                    DataRow lastRow = selectedItems.Rows[selectedItems.Rows.Count - 1];
-                    if (!Convert.IsDBNull(lastRow["TOTAL PRICE"]) && lastRow[0].ToString() == "TO PAY")
-                    {
-                        toPay = Convert.ToDecimal(lastRow["TOTAL PRICE"]);
-                    }
-                }
-
                 if (selectedItems.Rows.Count <= 1)
                 {
                     MessageBox.Show("No items selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -56,132 +45,101 @@ namespace Food_Court_Management_System
                     {
                         conn.Open();
 
-                        // Get new Customer_ID ONCE
+                        // Step 1: Get new Customer_ID
                         int customerId;
                         using (OracleCommand cmd = new OracleCommand("SELECT customer_seq.NEXTVAL FROM dual", conn))
-                        {
                             customerId = Convert.ToInt32(cmd.ExecuteScalar());
-                        }
 
-                        // Get new Order_ID ONCE
-                        int orderId;
-                        using (OracleCommand cmd = new OracleCommand("SELECT order_seq.NEXTVAL FROM dual", conn))
-                        {
-                            orderId = Convert.ToInt32(cmd.ExecuteScalar());
-                        }
-
-                        // Insert into Customer table ONCE
-                        string insertsql = @"INSERT INTO Customer(Customer_ID, Order_ID) values (:customerId, :orderId)";
-                        using (OracleCommand cmd = new OracleCommand(insertsql, conn))
+                        // Step 2: Insert Customer
+                        using (OracleCommand cmd = new OracleCommand("INSERT INTO Customer(Customer_ID) VALUES (:customerId)", conn))
                         {
                             cmd.Parameters.Add(":customerId", customerId);
-                            cmd.Parameters.Add(":orderId", orderId);
                             cmd.ExecuteNonQuery();
                         }
 
-                        // Insert order and payment for each item row except the last summary row
+                        // Step 3: Get new Order_ID
+                        int orderId;
+                        using (OracleCommand cmd = new OracleCommand("SELECT order_seq.NEXTVAL FROM dual", conn))
+                            orderId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        // Step 4: Insert into Orders (one row per item, same Order_ID)
                         for (int i = 0; i < selectedItems.Rows.Count - 1; i++)
                         {
                             DataRow row = selectedItems.Rows[i];
-                            string itemName = row["item_name"].ToString();
-                            int numberOfPlates = Convert.ToInt32(row["NUMBER OF PLATES"]);
+                            string food = row["item_name"].ToString();
+                            int plates = Convert.ToInt32(row["NUMBER OF PLATES"]);
                             decimal totalPrice = Convert.ToDecimal(row["TOTAL PRICE"]);
+                            decimal discountedPrice = row.Table.Columns.Contains("DISCOUNTED PRICE") && !Convert.IsDBNull(row["DISCOUNTED PRICE"])
+                                ? Convert.ToDecimal(row["DISCOUNTED PRICE"])
+                                : totalPrice;
 
-                            decimal discountPrice = 0;
-                            if (toPay < totalPrice)
+                            using (OracleCommand cmd = new OracleCommand(
+                                @"INSERT INTO Orders (Order_ID, Number_of_Plates, Total_Price, Customer_ID, Discounted_Price, Food, Stall_ID, Discount_Id)
+                                  VALUES (:orderId, :numberOfPlates, :totalPrice, :customerId, :discountedPrice, :food, :stallId, :discountId)", conn))
                             {
-                                discountPrice = totalPrice - toPay;
+                                cmd.Parameters.Add(":orderId", orderId);
+                                cmd.Parameters.Add(":numberOfPlates", plates);
+                                cmd.Parameters.Add(":totalPrice", totalPrice);
+                                cmd.Parameters.Add(":customerId", customerId);
+                                cmd.Parameters.Add(":discountedPrice", discountedPrice);
+                                cmd.Parameters.Add(":food", food);
+                                cmd.Parameters.Add(":stallId", stallId);
+                                cmd.Parameters.Add(":discountId", discountId);
+                                cmd.ExecuteNonQuery();
                             }
+                        }
 
-                            // Insert into Orders
-                            InsertOrderForItem(conn, itemName, numberOfPlates, totalPrice, discountPrice, customerId, orderId, stallId);
-
-                            // Insert into Payment (use this.paymentMethod, or pass from UI)
-                            InsertPaymentForItem(conn, orderId, itemName, paymentMethod);
+                        // Step 5: Insert Payment (one row per order)
+                        using (OracleCommand cmd = new OracleCommand(
+                            @"INSERT INTO Payment (Payment_ID, Order_ID, Payment_Method) 
+                              VALUES (payment_seq.NEXTVAL, :orderId, :paymentMethod)", conn))
+                        {
+                            cmd.Parameters.Add(":orderId", orderId);
+                            cmd.Parameters.Add(":paymentMethod", paymentMethod);
+                            cmd.ExecuteNonQuery();
                         }
 
                         MessageBox.Show(
-                            $"Your new Customer ID is: {customerId}\nYour new Order ID is: {orderId}",
-                            "Order Placed",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information
-                        );
-                       thanks thanks= new thanks(selectedItems, stallId, toPay);
+                            $"Your new Customer ID is: {customerId}\nYour new Order ID is: {orderId}\nDiscount: {discountName} ({discountPercent}%)",
+                            "Order Placed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        thanks thanks = new thanks(selectedItems, stallId, toPay);
                         thanks.Show();
                         this.Hide();
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Error inserting order/payment: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
         }
 
-        private void InsertOrderForItem(OracleConnection conn, string itemName, int numberOfPlates, decimal totalPrice, decimal discountPrice, int customerId, int orderId, int stallId)
-        {
-            string insertSql = @"INSERT INTO Orders
-                (Order_ID, Number_of_Plates, Total_Price, Customer_ID, Discount_Price, Food, Stall_ID)
-                VALUES (:orderId, :numberOfPlates, :totalPrice, :customerId, :discountPrice, :food, :stallId)";
-
-            using (OracleCommand cmd = new OracleCommand(insertSql, conn))
-            {
-                cmd.Parameters.Add(":orderId", orderId);
-                cmd.Parameters.Add(":numberOfPlates", numberOfPlates);
-                cmd.Parameters.Add(":totalPrice", totalPrice);
-                cmd.Parameters.Add(":customerId", customerId);
-                cmd.Parameters.Add(":discountPrice", discountPrice);
-                cmd.Parameters.Add(":food", itemName);
-                cmd.Parameters.Add(":stallId", stallId);
-
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        private void InsertPaymentForItem(OracleConnection conn, int orderId, string food, string paymentMethod)
-        {
-            // Get new Payment_ID from sequence each time
-            int paymentId;
-            using (OracleCommand cmd = new OracleCommand("SELECT payment_seq.NEXTVAL FROM dual", conn))
-            {
-                paymentId = Convert.ToInt32(cmd.ExecuteScalar());
-            }
-
-            string insertSql = @"INSERT INTO Payment
-                (Payment_ID, Order_ID, Food, Payment_Method)
-                VALUES (:paymentId, :orderId, :food, :paymentMethod)";
-
-            using (OracleCommand cmd = new OracleCommand(insertSql, conn))
-            {
-                cmd.Parameters.Add(":paymentId", paymentId);
-                cmd.Parameters.Add(":orderId", orderId);
-                cmd.Parameters.Add(":food", food);
-                cmd.Parameters.Add(":paymentMethod", paymentMethod);
-
-                cmd.ExecuteNonQuery();
-            }
-        }
-
         private void option_Load(object sender, EventArgs e)
         {
-            button1.BackColor = System.Drawing.Color.Transparent;
+            button1.BackColor = Color.Transparent;
             button1.FlatStyle = FlatStyle.Flat;
             button1.FlatAppearance.BorderSize = 0;
-            button1.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
-            button1.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
+            button1.FlatAppearance.MouseOverBackColor = Color.Transparent;
+            button1.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
-            button2.BackColor = System.Drawing.Color.Transparent;
+            button2.BackColor = Color.Transparent;
             button2.FlatStyle = FlatStyle.Flat;
             button2.FlatAppearance.BorderSize = 0;
-            button2.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Transparent;
-            button2.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
+            button2.FlatAppearance.MouseOverBackColor = Color.Transparent;
+            button2.FlatAppearance.MouseDownBackColor = Color.Transparent;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            bkash bkash = new bkash(selectedItems, stallId, toPay);
-            bkash .Show();
+            bkash bkash = new bkash(selectedItems, stallId, toPay, discountId, discountPercent, discountName);
+            bkash.Show();
             this.Hide();
-             }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            // Reserved for future use or exit
+        }
     }
 }
